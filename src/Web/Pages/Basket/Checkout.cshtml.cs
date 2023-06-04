@@ -54,8 +54,11 @@ public class CheckoutModel : PageModel
 
             var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
-            await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+            var createdOrder = await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
+
+            await _orderService.SendOrderRequestAsync(createdOrder);
+            await _orderService.SendDeliveryOrderAsync(createdOrder);
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {

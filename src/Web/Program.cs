@@ -1,5 +1,6 @@
 ﻿using System.Net.Mime;
 using Ardalis.ListStartupServices;
+using Azure.Identity;
 using BlazorAdmin;
 using BlazorAdmin.Services;
 using Blazored.LocalStorage;
@@ -37,6 +38,13 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
            .AddDefaultUI()
            .AddEntityFrameworkStores<AppIdentityDbContext>()
                            .AddDefaultTokenProviders();
+
+var vaultName = builder.Configuration["VaultName"];
+if (!string.IsNullOrWhiteSpace(vaultName))
+{
+    var vaultUri = new Uri($"https://{vaultName}.vault.azure.net/");
+    builder.Configuration.AddAzureKeyVault(vaultUri, new DefaultAzureCredential());
+}
 
 builder.Services.AddScoped<ITokenClaimsService, IdentityTokenClaimService>();
 builder.Configuration.AddEnvironmentVariables();
@@ -93,6 +101,7 @@ builder.Services.AddScoped<HttpService>();
 builder.Services.AddBlazorServices();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
