@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Azure.Identity;
 using BlazorShared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -72,10 +74,12 @@ builder.Services.AddAuthentication(config =>
 const string CORS_POLICY = "CorsPolicy";
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()!
+        .Select(o => o.Replace("host.docker.internal", "localhost").TrimEnd('/'));
     options.AddPolicy(name: CORS_POLICY,
         corsPolicyBuilder =>
         {
-            corsPolicyBuilder.WithOrigins(baseUrlConfig!.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'));
+            corsPolicyBuilder.WithOrigins(allowedOrigins.ToArray());
             corsPolicyBuilder.AllowAnyMethod();
             corsPolicyBuilder.AllowAnyHeader();
         });
@@ -121,6 +125,15 @@ builder.Services.AddSwaggerGen(c =>
                     }
             });
 });
+
+builder.Services.AddApplicationInsightsTelemetry();
+
+var vaultName = builder.Configuration["VaultName"];
+if (!string.IsNullOrWhiteSpace(vaultName))
+{
+    var vaultUri = new Uri($"https://{vaultName}.vault.azure.net/");
+    builder.Configuration.AddAzureKeyVault(vaultUri, new DefaultAzureCredential());
+}
 
 var app = builder.Build();
 
